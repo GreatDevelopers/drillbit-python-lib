@@ -2,8 +2,6 @@
 
 This module provides a Python interface to interact with the DrillBit Plagiarism Check API. It supports authentication, folder operations, file uploads, submissions, and file downloads.
 
-# Setup
-
 ## Prerequisites
 
 - Python 3.6+
@@ -64,13 +62,6 @@ import frappe
 from frappe.model.document import Document
 from assets.drillbit.drillbit_api import DrillbitAPI
 
-
-def get_absolute_path(file_name):
-	if(file_name.startswith('/files/')):
-		file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}/public{file_name}'
-	if(file_name.startswith('/private/')):
-		file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{file_name}'
-	return file_path
 
 class Assignment(Document):
     def on_submit(self):
