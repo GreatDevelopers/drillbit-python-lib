@@ -10,24 +10,11 @@ This module provides a Python interface to interact with the DrillBit Plagiarism
 
 - requests library
 
-- python-dotenv library
-
 - DrillBit API credentials (username and password)
-
-- Installation
-
-- Clone the repository or download the drillbit_api.py file.
-
-- Install the required Python packages:
 
 
 # Setup
 
-Create a .env file in the same directory as drillbit_api.py and add your DrillBit API credentials:
-```ini
-DRILLBIT_USERNAME=your_username
-DRILLBIT_PASSWORD=your_password
-```
 
 # Usage
 ```python
@@ -60,22 +47,11 @@ To integrate this module into a Frappe application, follow these steps:
 
 - Place drillbit_api.py in your Frappe app:
 
-- Copy the drillbit_api.py file into your Frappe application directory, for example: your_app/your_app/api/drillbit_api.py.
+- Copy the drillbit_api.py file into your Frappe sites directory, for example: "/home/frappeuser/frappe-bench/sites/assets/drillbit/drillbit_api.py"
 
-- Add DrillBit credentials to your site configuration:
+- Add DrillBit credentials to your site configuration.
 
 - Open your site's site_config.json file and add your DrillBit API credentials:
-
-Note: this will be later handled within frappe. We would write the username and password in site's config using frappe API.
-
-```json
-{
-    "db_name": "your_db_name",
-    "db_password": "your_db_password",
-    "drillbit_username": "your_username",
-    "drillbit_password": "your_password"
-}
-```
 
 ## Use the DrillBit API module in your Frappe code:
 
@@ -83,22 +59,28 @@ Import and use the module in your Frappe application. For example, you can creat
 
 
 ```python
-from your_app.api.drillbit_api import DrillbitAPI
+import os
 import frappe
+from frappe.model.document import Document
+from assets.drillbit.drillbit_api import DrillbitAPI
 
-def example_function():
-    base_url = "https://s1.drillbitplagiarismcheck.com"
-    api = DrillbitAPI(base_url)
 
-    username = frappe.get_site_config().get('drillbit_username')
-    password = frappe.get_site_config().get('drillbit_password')
+def get_absolute_path(file_name):
+	if(file_name.startswith('/files/')):
+		file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}/public{file_name}'
+	if(file_name.startswith('/private/')):
+		file_path = f'{frappe.utils.get_bench_path()}/sites/{frappe.utils.get_site_base_path()[2:]}{file_name}'
+	return file_path
 
-    api.authenticate(username, password)
+class Assignment(Document):
+    def on_submit(self):
+        #Authenticate with Drillbit API
+        base_url = "https://s1.drillbitplagiarismcheck.com"
+        api = DrillbitAPI(base_url)
+        api.authenticate(username, password, frappe)
+        api.create_folder("New Folder") # example of how to create a new folder using the drillbit API.
 
-    if api.is_token_valid():
-        folder_name = "Pro folder"
-        api.create_folder(folder_name)
-        # Add more method calls as needed
-    else:
-        frappe.throw("Unable to proceed, authentication failed.")
+        frappe.msgprint(f"This is the Uploaded file: {get_absolute_path(uploaded_file)}")
+        frappe.msgprint(f"Username: {username}, Password: {password}")
+
 ```
