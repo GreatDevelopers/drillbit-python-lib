@@ -111,34 +111,58 @@ class DrillbitAPI:
             'sec-ch-ua-platform': '"Windows"',
         }
 
-    def upload_file(self, folder_id, file_path, author_name, title, document_type):
-        url = f"{self.base_url}/files/folder/{folder_id}/singleFile"
-        headers = {
-            'Authorization': f'Bearer {self.jwt_token}',
-        }
-
+    def upload_file(self, author_name, title, document_type, guide_email, guide_name, plagiarism_check, grammar_check, language, file_path):
+        url = f"{self.base_url}/files/folder/450824/singleFile"
+        
+        # Prepare the files and data for the request
         files = {
-            'file': open(file_path, 'rb'),
+            'file': open(file_path, 'rb')  # Open the file in binary mode
+        }
+        data = {
             'authorName': author_name,
             'title': title,
             'documentType': document_type,
-            'plagiarismCheck': 'YES',
-            'grammarCheck': 'NO'
+            'guide_email': guide_email,
+            'guide_name': guide_name,
+            'plagiarismCheck': plagiarism_check,
+            'grammarCheck': grammar_check,
+            'language': language,
+        }
+        
+        # Set headers
+        headers = {
+            'Accept': 'application/json',
+            'Connection': 'keep-alive',
+            'Origin': 'https://www.drillbitplagiarismcheck.com',
+            'Referer': 'https://www.drillbitplagiarismcheck.com/',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+            'authorization': f'Bearer {self.jwt_token}',
         }
 
-        try:
-            response = requests.post(url, headers=headers, files=files)
+        # Debugging output
+        print("----------------------------------------------------------------------------------------")
+        print("Request URL:", url)
+        print("Request Headers:", headers)
+        print("Request Data:", data)
+        print("Request Files:", files)
+        print("----------------------------------------------------------------------------------------")
+
+        # Make the POST request
+        response = requests.post(url, headers=headers, data=data, files=files)
+        
+        # Debugging output for response
+        print("----------------------------------------------------------------------------------------")
+        print("Response Status Code:", response.status_code)
+        print("Response Headers:", response.headers)
+        print("Response Body:", response.text)
+        print("----------------------------------------------------------------------------------------")
+        
+        # Handle the response
+        if response.status_code == 200:
+            return response.json()  # Assuming the API returns JSON
+        else:
             response.raise_for_status()  # Raise an error for bad responses
-            response_data = response.json()
 
-            print("Response Status Code:", response_data['status'])
-            print("Response Message:", response_data['message'])
-
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to upload file: {e}")
-
-        finally:
-            files['file'].close()  # Ensure the file is closed
 
     def get_headers(self):
         return {
