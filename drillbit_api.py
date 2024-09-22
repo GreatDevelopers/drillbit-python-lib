@@ -9,7 +9,7 @@ from requests.exceptions import RequestException
 class DrillbitAPI:
     def __init__(self, base_url):
         self.base_url = base_url
-        self.jwt_token = None
+        self.jwt_token = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhbXJpbmRlcjIxMTUwMTJAZ25kZWMuYWMuaW4iLCJ1c2VyX2lkIjoyMzMzNDcsImV4cCI6MTcyNjk1MDM3OCwiaWF0IjoxNzI2OTMyMzc4fQ.AvgCJDCy90kK1FyRQi4s6iwr2Ha_tsrAy-7qqH3MoyC-g-ZAvfVOKh0rOgXcaL57jj1BvsN_s1qlX7i0ZGlwSw"
         self.jwt_expiry = 0
 
     def authenticate(self, username, password, frappe):
