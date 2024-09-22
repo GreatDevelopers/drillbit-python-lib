@@ -11,39 +11,8 @@ This module provides a Python interface to interact with the DrillBit Plagiarism
 - DrillBit API credentials (username and password)
 
 
-# Setup
-
-
-# Usage
-```python
-from drillbit_api import DrillbitAPI
-import os
-
-def main():
-    base_url = "https://s1.drillbitplagiarismcheck.com"
-    api = DrillbitAPI(base_url)
-
-    username = os.getenv("DRILLBIT_USERNAME")
-    password = os.getenv("DRILLBIT_PASSWORD")
-
-    api.authenticate(username, password)
-
-    if api.is_token_valid():
-        folder_name = "Pro folder"
-        api.create_folder(folder_name)
-        # Add more method calls as needed for testing
-    else:
-        print("Unable to proceed, authentication failed.")
-
-if __name__ == "__main__":
-    main()
-```
-
-
 # Connecting to Frappe
 To integrate this module into a Frappe application, follow these steps:
-
-- Place drillbit_api.py in your Frappe app:
 
 - Copy the drillbit_api.py file into your Frappe sites directory, for example: "/home/frappeuser/frappe-bench/sites/assets/drillbit/drillbit_api.py"
 
