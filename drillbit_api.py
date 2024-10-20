@@ -9,7 +9,7 @@ from requests.exceptions import RequestException
 class DrillbitAPI:
     def __init__(self, base_url):
         self.base_url = base_url
-        self.jwt_token = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhbXJpbmRlcjIxMTUwMTJAZ25kZWMuYWMuaW4iLCJ1c2VyX2lkIjoyMzMzNDcsImV4cCI6MTcyNjk1MDM3OCwiaWF0IjoxNzI2OTMyMzc4fQ.AvgCJDCy90kK1FyRQi4s6iwr2Ha_tsrAy-7qqH3MoyC-g-ZAvfVOKh0rOgXcaL57jj1BvsN_s1qlX7i0ZGlwSw"
+        self.jwt_token = " "
         self.jwt_expiry = 0
 
     def authenticate(self, username, password, frappe):
@@ -29,7 +29,7 @@ class DrillbitAPI:
             self.jwt_expiry = jwt.decode(self.jwt_token, options={"verify_signature": False})['exp']
 
             print("Authentication successful.")
-            frappe.msgprint("Auth Success!")
+            # frappe.msgprint("Auth Success!")
             print(f"JWT token: {self.jwt_token}")
             print(f"Expires at: {time.ctime(self.jwt_expiry)}")
 
@@ -42,24 +42,42 @@ class DrillbitAPI:
             return False
         return True
 
-    def create_folder(self, folder_name):
+    def create_folder(
+                    self,
+                    folder_name,
+                    exclude_reference="NO",
+                    exclude_quotes="NO",
+                    exclude_small_sources="NO",
+                    grammar_check="NO",
+                    exclude_phrases="NO",
+                    db_studentpaper="YES",
+                    db_publications="YES",
+                    db_internet="YES",
+                    institution_repository="YES",
+                    email_notifications="NO",
+                    exclude_threshold=14,
+                    phrases=None
+                ):
         url = f"{self.base_url}/pro/folder"
         headers = self.get_headers()
         
         data = {
             "folder_name": folder_name,
-            "exclude_reference": "NO",
-            "exclude_quotes": "NO",
-            "exclude_small_sources": "NO",
-            "grammar_check": "NO",
-            "exclude_phrases": "NO",
-            "db_studentpaper": "YES",
-            "db_publications": "YES",
-            "db_internet": "YES",
-            "institution_repository": "YES",
-            "email_notifications": "NO",
-            "exclude_threshold": 14,
+            "exclude_reference": exclude_reference,
+            "exclude_quotes": exclude_quotes,
+            "exclude_small_sources": exclude_small_sources,
+            "grammar_check": grammar_check,
+            "exclude_phrases": exclude_phrases,
+            "db_studentpaper": db_studentpaper,
+            "db_publications": db_publications,
+            "db_internet": db_internet,
+            "institution_repository": institution_repository,
+            "email_notifications": email_notifications,
+            "exclude_threshold": exclude_threshold,
         }
+
+        if exclude_phrases == "YES" and phrases:
+            data["phrases"] = phrases
 
         # Dump the entire request
         request_info = f"""
@@ -73,14 +91,7 @@ class DrillbitAPI:
             response = requests.post(url, headers=headers, json=data)
             response.raise_for_status()  # Raise an error for bad responses
 
-            response_data = response.json()
-            # Dump the response
-            response_info = f"""
-            Response Status Code: {response.status_code}
-            Response Headers: {json.dumps(dict(response.headers), indent=2)}
-            Response Body: {json.dumps(response_data, indent=2)}
-            """
-            print(response_info)
+            return response
 
         except RequestException as e:
             print(f"Failed to create folder: {e}")
@@ -92,6 +103,7 @@ class DrillbitAPI:
                 Response Body: {response.text}
                 """
                 print(error_response_info)
+                return response
 
     def get_headers(self):
         return {
@@ -111,8 +123,8 @@ class DrillbitAPI:
             'sec-ch-ua-platform': '"Windows"',
         }
 
-    def upload_file(self, author_name, title, document_type, guide_email, guide_name, plagiarism_check, grammar_check, language, file_path):
-        url = f"{self.base_url}/files/folder/450824/singleFile"
+    def upload_file(self, author_name, title, document_type, guide_email, guide_name, plagiarism_check, grammar_check, language, file_path, folder_id):
+        url = f"{self.base_url}/files/folder/{folder_id}/singleFile"
         
         # Prepare the files and data for the request
         files = {
@@ -158,10 +170,10 @@ class DrillbitAPI:
         print("----------------------------------------------------------------------------------------")
         
         # Handle the response
-        if response.status_code == 200:
-            return response.json()  # Assuming the API returns JSON
-        else:
-            response.raise_for_status()  # Raise an error for bad responses
+        return response.json()  # Assuming the API returns JSON
+        # if response.status_code == 200:
+        # else:
+        #     response.raise_for_status()  # Raise an error for bad responses
 
 
     def get_headers(self):
@@ -210,21 +222,20 @@ class DrillbitAPI:
         except RequestException as e:
             print(f"Failed to create submission: {e}")
 
-    def download_file(self, paper_id, d_key):
+    def download_file(self, paper_id, d_key, folder_path):
         url = f"{self.base_url}/analysis-gateway/api/download2/{paper_id}/{d_key}"
         headers = {'Authorization': f'Bearer {self.jwt_token}'}
 
-        try:
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
+        response = requests.get(url, headers=headers)
+        if (response.status_code != 200):
+            return None
+        file_path = os.path.join(folder_path, f"{paper_id}.pdf")
+        with open(file_path, 'wb') as file:
+            file.write(response.content)
+        print(f"File downloaded successfully as {file_path}")
+        return file_path
 
-            with open(f"{paper_id}.pdf", 'wb') as file:
-                file.write(response.content)
 
-            print(f"File downloaded successfully as {paper_id}.pdf")
-
-        except RequestException as e:
-            print(f"Failed to download file: {e}")
 
     def get_folders_list(self, page=0, size=25, field='ass_id', order_by='desc'):
         url = f"{self.base_url}/pro/folders?page={page}&size={size}&field={field}&orderBy={order_by}"
@@ -241,8 +252,8 @@ class DrillbitAPI:
         except RequestException as e:
             print(f"Failed to get folders list: {e}")
 
-    def get_submissions_list(self, folder_id, page=0, size=25, field='paper_id', order_by='desc'):
-        url = f"{self.base_url}/pro/folder/{folder_id}/submissions?page={page}&size={size}&field={field}&orderBy={order_by}"
+    def get_submissions_list(self, folder_id, paper_id):
+        url = f"{self.base_url}/pro/folder/{folder_id}/submissions?paperId={paper_id}"
         headers = self.get_headers()
 
         try:
@@ -252,6 +263,7 @@ class DrillbitAPI:
             response_data = response.json()
             print("Submissions list retrieved successfully.")
             print(json.dumps(response_data, indent=4))
+            return response_data
 
         except RequestException as e:
             print(f"Failed to get submissions list: {e}")
@@ -270,42 +282,78 @@ class DrillbitAPI:
         except RequestException as e:
             print(f"Failed to delete folder: {e}")
 
-    def edit_folder(self, folder_id, folder_name):
+    def edit_folder(
+                    self,
+                    folder_id,
+                    folder_name,
+                    exclude_reference="NO",
+                    exclude_quotes="NO",
+                    exclude_small_sources="NO",
+                    grammar_check="NO",
+                    exclude_phrases="NO",
+                    db_studentpaper="YES",
+                    db_publications="YES",
+                    db_internet="YES",
+                    institution_repository="YES",
+                    email_notifications="NO",
+                    exclude_threshold=14,
+                    phrases=None
+
+                ):
+        
         url = f"{self.base_url}/pro/folder/{folder_id}"
         headers = self.get_headers()
+        
         data = {
             "folder_name": folder_name,
-            "exclude_reference": "NO",
-            "exclude_quotes": "NO",
-            "exclude_small_sources": "NO",
-            "grammar_check": "NO",
-            "db_studentpaper": "YES",
-            "db_publications": "YES",
-            "db_internet": "YES",
-            "institution_repository": "YES",
-            "exclude_phrases": "YES",
-            "phrases": {
-                "p1": "phrases 1",
-                "p2": "phrases 2",
-                "p3": "Phrases 3"
-            }
+            "exclude_reference": exclude_reference,
+            "exclude_quotes": exclude_quotes,
+            "exclude_small_sources": exclude_small_sources,
+            "grammar_check": grammar_check,
+            "exclude_phrases": exclude_phrases,
+            "db_studentpaper": db_studentpaper,
+            "db_publications": db_publications,
+            "db_internet": db_internet,
+            "institution_repository": institution_repository,
+            "email_notifications": email_notifications,
+            "exclude_threshold": exclude_threshold,
         }
+        if exclude_phrases == "YES" and phrases:
+            data["phrases"] = phrases
+
+        # Dump the entire request
+        request_info = f"""
+        Request URL: {url}
+        Request Headers: {json.dumps(headers, indent=2)}
+        Request Data: {json.dumps(data, indent=2)}
+        """
+        print(request_info)
 
         try:
             response = requests.put(url, headers=headers, json=data)
-            response.raise_for_status()
+            response.raise_for_status()  # Raise an error for bad responses
 
-            response_data = response.json()
-            status = response_data['status']
-            message = response_data['message']
-            timestamp = response_data['timeStamp']
-
-            print(f"Folder edit status: {status}")
-            print(f"Message: {message}")
-            print(f"Timestamp: {timestamp}")
+            # response_data = response.json()
+            # # Dump the response
+            # response_info = f"""
+            # Response Status Code: {response.status_code}
+            # Response Headers: {json.dumps(dict(response.headers), indent=2)}
+            # Response Body: {json.dumps(response_data, indent=2)}
+            # """
+            # print(response_info)
+            return response
 
         except RequestException as e:
             print(f"Failed to edit folder: {e}")
+            if response is not None:
+                # Dump the error response
+                error_response_info = f"""
+                Response Status Code: {response.status_code}
+                Response Headers: {json.dumps(dict(response.headers), indent=2)}
+                Response Body: {response.text}
+                """
+                print(error_response_info)
+                return response
 
     def delete_submission(self, folder_id, paper_id):
         url = f"{self.base_url}/pro/folder/{folder_id}/submissions?paperId={paper_id}"
